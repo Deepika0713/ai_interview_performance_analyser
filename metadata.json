@@ -1,0 +1,6 @@
+{
+  "name": "AI Interview Performance Analyzer",
+  "description": "Multi-modal AI Interview Performance Analyzer for audio and video interview practice, speech pace analytics, and Streamlit Python ML pipeline.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

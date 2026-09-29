@@ -1,0 +1,24 @@
+# AI Interview Performance Analyzer - Python Dependencies
+# Phase 1 Core + Phase 2 Computer Vision + Phase 3 Speech & Audio ML Stack
+
+streamlit>=1.32.0
+streamlit-webrtc>=0.47.0
+av>=11.0.0
+pydub>=0.25.1
+librosa>=0.10.1
+numpy>=1.24.0
+scipy>=1.11.0
+soundfile>=0.12.1
+opencv-python-headless>=4.8.0
+matplotlib>=3.8.0
+plotly>=5.18.0
+pandas>=2.1.0
+
+# Phase 2 Computer Vision & Deep Learning
+mediapipe>=0.10.9
+deepface>=0.0.90
+tf-keras>=2.15.0
+
+# Phase 3 Audio & Multimodal Speech Models
+huggingface_hub>=0.21.0
+requests>=2.31.0
