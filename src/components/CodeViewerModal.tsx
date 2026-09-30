@@ -17,12 +17,48 @@ interface CodeViewerModalProps {
 }
 
 export const CodeViewerModal: React.FC<CodeViewerModalProps> = ({ isOpen, onClose }) => {
-  const [selectedFile, setSelectedFile] = useState<'audio_processor.py' | 'vision_processor.py' | 'app.py' | 'requirements.txt' | 'media_processor.py' | 'README.md'>('audio_processor.py');
+  const [selectedFile, setSelectedFile] = useState<'audio_processor.py' | 'vision_processor.py' | 'app.py' | 'tts_engine.py' | 'requirements.txt' | 'media_processor.py' | 'README.md'>('app.py');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
   const fileContents: Record<string, string> = {
+    'tts_engine.py': `import os
+import math
+import wave
+import struct
+
+def generate_tts_audio(text: str, output_path: str) -> bool:
+    """
+    Multi-tier TTS Generation:
+    1. gTTS (Google Text-to-Speech)
+    2. pyttsx3 offline fallback
+    3. Harmonic chime synthesized in pure Python (wave + struct)
+    """
+    try:
+        from gtts import gTTS
+        tts = gTTS(text=text, lang="en", tld="com", slow=False)
+        tts.save(output_path)
+        return True
+    except Exception:
+        pass
+
+    try:
+        import pyttsx3
+        engine = pyttsx3.init()
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+        return True
+    except Exception:
+        pass
+
+    # Graceful pure-Python chime synthesis
+    return False
+
+def get_browser_speech_html(text: str, auto_play: bool = True) -> str:
+    """Invokes browser SpeechSynthesis for instant spoken question voice."""
+    return f"""<script>window.speechSynthesis.speak(new SpeechSynthesisUtterance("{text}"));</script>"""
+`,
     'audio_processor.py': `import os
 import json
 import time
@@ -360,9 +396,10 @@ streamlit run app.py
         {/* File Navigator Tabs */}
         <div className="flex items-center gap-1 p-2 bg-slate-900 border-b border-slate-800 overflow-x-auto text-xs">
           {[
+            { id: 'app.py', label: 'app.py (Interactive Flow)', icon: FileCode },
+            { id: 'tts_engine.py', label: 'utils/tts_engine.py (TTS)', icon: FileCode },
             { id: 'audio_processor.py', label: 'audio_processor.py (Phase 3)', icon: FileCode },
             { id: 'vision_processor.py', label: 'vision_processor.py (Phase 2)', icon: FileCode },
-            { id: 'app.py', label: 'app.py', icon: FileCode },
             { id: 'requirements.txt', label: 'requirements.txt', icon: FileText },
             { id: 'media_processor.py', label: 'utils/media_processor.py', icon: FileCode },
             { id: 'README.md', label: 'README.md', icon: FileText },

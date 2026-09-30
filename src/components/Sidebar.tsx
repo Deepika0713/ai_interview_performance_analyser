@@ -18,6 +18,7 @@ import {
   Eye,
   Smile,
   Mic,
+  FileDown,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -33,6 +34,7 @@ interface SidebarProps {
   onCustomQuestionTextChange: (text: string) => void;
   onOpenCodeModal: () => void;
   tempFileCount: number;
+  onDownloadPDF?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCustomQuestionTextChange,
   onOpenCodeModal,
   tempFileCount,
+  onDownloadPDF,
 }) => {
   const [isDocExpanded, setIsDocExpanded] = useState(true);
   const roleQuestions = QUESTION_BANK.filter((q) => q.role === selectedRole);
@@ -286,6 +289,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     7B Multimodal Audio-LLM directly understanding raw speech audio. Evaluates STAR structure, keyword coverage, verbatim transcripts, WPM (130-160 range), and pauses &gt;1.5s.
                   </p>
                 </div>
+
+                {/* PDF Download Trigger */}
+                {onDownloadPDF && (
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={onDownloadPDF}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 hover:text-indigo-100 border border-indigo-700/60 text-[11px] font-semibold transition-all shadow-sm group"
+                      title="Download complete system architecture and ML pipeline manual as PDF"
+                    >
+                      <FileDown className="w-3.5 h-3.5 transition-transform group-hover:translate-y-0.5" />
+                      <span>Download Documentation (PDF)</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

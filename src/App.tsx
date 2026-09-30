@@ -24,7 +24,10 @@ import {
   CheckCircle2,
   Sliders,
   Play,
+  Pause,
   RotateCcw,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 export default function App() {
@@ -34,6 +37,11 @@ export default function App() {
   const [isCustomQuestion, setIsCustomQuestion] = useState(false);
   const [customQuestionText, setCustomQuestionText] = useState('');
   const [activeTab, setActiveTab] = useState<'upload' | 'record'>('upload');
+
+  // AI Voice Playback (TTS) state
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+  const [isVoicePaused, setIsVoicePaused] = useState(false);
+  const [autoReadQuestion, setAutoReadQuestion] = useState(false);
 
   // Media state
   const [activeMedia, setActiveMedia] = useState<MediaFileMeta | null>(null);
@@ -61,6 +69,101 @@ export default function App() {
     ? customQuestionText || 'Custom Interview Prompt'
     : selectedQuestion;
 
+  // Speech synthesis for AI Interviewer Voiceplay
+  const speakQuestion = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    const cleanText = text.replace(/[*_#`]/g, '').trim();
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.98;
+    utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice =
+      voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.includes('Google') ||
+            v.name.includes('Natural') ||
+            v.name.includes('Samantha') ||
+            v.name.includes('Daniel') ||
+            v.name.includes('Karen'))
+      ) || voices.find((v) => v.lang.startsWith('en'));
+
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    utterance.onstart = () => {
+      setIsPlayingVoice(true);
+      setIsVoicePaused(false);
+    };
+
+    utterance.onend = () => {
+      setIsPlayingVoice(false);
+      setIsVoicePaused(false);
+    };
+
+    utterance.onerror = () => {
+      setIsPlayingVoice(false);
+      setIsVoicePaused(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleToggleSpeech = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    if (isPlayingVoice) {
+      if (isVoicePaused) {
+        window.speechSynthesis.resume();
+        setIsVoicePaused(false);
+      } else {
+        window.speechSynthesis.pause();
+        setIsVoicePaused(true);
+      }
+    } else {
+      speakQuestion(currentQuestionPrompt);
+    }
+  };
+
+  const handleStopSpeech = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlayingVoice(false);
+    setIsVoicePaused(false);
+  };
+
+  const handleReplaySpeech = () => {
+    handleStopSpeech();
+    setTimeout(() => {
+      speakQuestion(currentQuestionPrompt);
+    }, 150);
+  };
+
+  // Auto-play on question change if enabled
+  useEffect(() => {
+    if (autoReadQuestion) {
+      speakQuestion(currentQuestionPrompt);
+    } else {
+      handleStopSpeech();
+    }
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [currentQuestionPrompt]);
+
   const handleMediaSelect = (media: MediaFileMeta) => {
     setActiveMedia(media);
     setTempCacheFiles((prev) => [media, ...prev.filter((m) => m.id !== media.id)]);
@@ -70,6 +173,26 @@ export default function App() {
   const handleClearMedia = () => {
     setActiveMedia(null);
     setAnalysisResult(null);
+  };
+
+  // Advance to next question without changing UI when "Practice Another Question" is selected
+  const handlePracticeNextQuestion = () => {
+    const roleQuestions = QUESTION_BANK.filter((q) => q.role === selectedRole);
+    if (roleQuestions.length > 0) {
+      const currentIndex = roleQuestions.findIndex((q) => q.text === selectedQuestion);
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % roleQuestions.length : 0;
+      setSelectedQuestion(roleQuestions[nextIndex].text);
+      setIsCustomQuestion(false);
+    }
+
+    // Reset media & scorecard for the new question turn
+    setActiveMedia(null);
+    setAnalysisResult(null);
+
+    // Smoothly scroll back to the top of the question view
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Run the multi-modal analysis pipeline (Phase 2 & Phase 3)
@@ -328,6 +451,88 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Audio Voiceplay for Question Display */}
+            <div className="relative z-10 mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center flex-wrap gap-2.5">
+                {/* Main Play / Pause Button */}
+                <button
+                  onClick={handleToggleSpeech}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md ${
+                    isPlayingVoice && !isVoicePaused
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25 hover:shadow-blue-500/40'
+                  }`}
+                  title={isPlayingVoice ? (isVoicePaused ? 'Resume Voice' : 'Pause Voice') : 'Listen to AI Interviewer speak question'}
+                >
+                  {isPlayingVoice && !isVoicePaused ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5 fill-current" />
+                      <span>Pause Question Audio</span>
+                      {/* Animated Equalizer Wave Bars */}
+                      <span className="flex items-center gap-0.5 ml-1">
+                        <span className="w-0.5 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-0.5 h-3.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-0.5 h-2 bg-white rounded-full animate-bounce" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-white" />
+                      <span>{isVoicePaused ? 'Resume Question Audio' : 'Play Question Audio (TTS)'}</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Replay Button */}
+                <button
+                  onClick={handleReplaySpeech}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700/60 transition-colors"
+                  title="Replay question from beginning"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Replay</span>
+                </button>
+
+                {/* Stop Button */}
+                {isPlayingVoice && (
+                  <button
+                    onClick={handleStopSpeech}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 text-red-300 text-xs font-medium border border-red-800/40 transition-colors"
+                    title="Stop Audio"
+                  >
+                    <VolumeX className="w-3.5 h-3.5 text-red-400" />
+                    <span>Stop</span>
+                  </button>
+                )}
+
+                {/* Live Status Indicator */}
+                <div className="flex items-center gap-2 pl-1">
+                  {isPlayingVoice && !isVoicePaused ? (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 rounded-lg">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      AI Interviewer Speaking...
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      Voice Output Ready
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Auto-read Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-400 hover:text-slate-300 transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={autoReadQuestion}
+                  onChange={(e) => setAutoReadQuestion(e.target.checked)}
+                  className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer"
+                />
+                <span>Auto-play on question change</span>
+              </label>
+            </div>
           </div>
 
           {/* Section 1: Candidate Media Capture & Input Modules */}
@@ -405,10 +610,7 @@ export default function App() {
             <section className="space-y-4">
               <AnalysisReport
                 result={analysisResult}
-                onReset={() => {
-                  setActiveMedia(null);
-                  setAnalysisResult(null);
-                }}
+                onReset={handlePracticeNextQuestion}
               />
             </section>
           )}

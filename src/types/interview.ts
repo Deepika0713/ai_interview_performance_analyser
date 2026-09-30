@@ -1,4 +1,35 @@
-export type JobRole = 'Software Engineer' | 'Product Manager' | 'HR Specialist / People Ops';
+export type JobRole = 'Software Engineer' | 'Product Manager' | 'HR Specialist / People Ops' | 'Data Scientist / ML Engineer';
+
+export interface AdaptiveFollowUp {
+  question: string;
+  reasoning: string;
+  interviewerDialogue: string;
+}
+
+export interface AdaptiveTurnRecord {
+  turnIndex: number;
+  question: string;
+  category: string;
+  isAdaptive: boolean;
+  transcript: string;
+  audioUrl?: string;
+  scores: {
+    relevance: number;
+    keywordCoverage: number;
+    structuralClarity: number;
+    tone: number;
+    eyeContact: number;
+    wpm: number;
+    composite: number;
+  };
+  detectedWeaknesses: string[];
+  missingConcepts: string[];
+  followUp: AdaptiveFollowUp;
+  fillerWords: string[];
+  strengths: string[];
+  improvements: string[];
+  emotionBreakdown: Record<string, number>;
+}
 
 export interface InterviewQuestion {
   id: string;

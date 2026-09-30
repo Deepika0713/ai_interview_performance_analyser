@@ -22,3 +22,5 @@ tf-keras>=2.15.0
 # Phase 3 Audio & Multimodal Speech Models
 huggingface_hub>=0.21.0
 requests>=2.31.0
+gTTS>=2.5.1
+pyttsx3>=2.90
